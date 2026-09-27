@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<title>المندرية للمقاولات - النظام الميداني</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.png">
+<meta name="theme-color" content="#0f766e">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+  :root{
+    --teal:#0f766e; --teal-dark:#0b5c55; --teal-light:#14b8a6;
+    --bg:#f4f6f5; --card:#ffffff; --text:#1f2937; --muted:#6b7280;
+    --danger:#dc2626; --warn:#d97706; --ok:#16a34a; --border:#e5e7eb;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0; font-family:'Tahoma','Segoe UI',sans-serif; background:var(--bg); color:var(--text);
+    padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  header{
+    background:linear-gradient(135deg,var(--teal),var(--teal-dark));
+    color:#fff; padding:16px 18px calc(14px + env(safe-area-inset-top,0px));
+    position:sticky; top:0; z-index:10; box-shadow:0 2px 8px rgba(0,0,0,.15);
+  }
+  header h1{margin:0; font-size:17px; font-weight:700;}
+  header p{margin:2px 0 0; font-size:12px; opacity:.85;}
+  main{max-width:520px; margin:0 auto; padding:14px 14px 90px;}
+  .card{background:var(--card); border-radius:14px; padding:16px; margin-bottom:14px; box-shadow:0 1px 4px rgba(0,0,0,.06); border:1px solid var(--border);}
+  label{display:block; font-size:13px; font-weight:600; color:var(--muted); margin-bottom:6px;}
+  input[type=text], input[type=number], select, textarea{
+    width:100%; padding:11px 12px; border:1px solid var(--border); border-radius:10px;
+    font-size:15px; margin-bottom:14px; background:#fafafa; color:var(--text); font-family:inherit;
+  }
+  input:focus, select:focus, textarea:focus{outline:2px solid var(--teal-light); background:#fff;}
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:6px;
+    padding:12px 16px; border-radius:10px; border:none; font-size:14px; font-weight:700;
+    cursor:pointer; width:100%; margin-bottom:10px; transition:.15s;
+  }
+  .btn-primary{background:var(--teal); color:#fff;}
+  .btn-primary:active{background:var(--teal-dark);}
+  .btn-outline{background:#fff; color:var(--teal); border:1.5px solid var(--teal);}
+  .btn-danger{background:#fef2f2; color:var(--danger); border:1px solid #fecaca;}
+  .btn:disabled{opacity:.5; cursor:not-allowed;}
+  .row{display:flex; gap:10px;}
+  .row>*{flex:1;}
+  .loc-box{background:#f0fdfa; border:1px dashed var(--teal-light); border-radius:10px; padding:10px 12px; font-size:13px; margin-bottom:14px; min-height:20px;}
+  .loc-box.pending{color:var(--muted);}
+  .loc-box.ok{color:var(--teal-dark); font-weight:600;}
+  .photos-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:10px;}
+  .photo-thumb{position:relative; border-radius:10px; overflow:hidden; aspect-ratio:1; background:#eee;}
+  .photo-thumb img{width:100%; height:100%; object-fit:cover; display:block;}
+  .photo-thumb .del{position:absolute; top:3px; left:3px; background:rgba(220,38,38,.9); color:#fff; border:none; border-radius:50%; width:22px; height:22px; font-size:13px; line-height:1;}
+  .badge{display:inline-block; font-size:11px; padding:3px 9px; border-radius:999px; font-weight:700;}
+  .badge-pending{background:#fef3c7; color:#92400e;}
+  .badge-uploading{background:#dbeafe; color:#1e40af;}
+  .badge-done{background:#dcfce7; color:#166534;}
+  .badge-error{background:#fee2e2; color:#991b1b;}
+  .report-item{padding:12px; border:1px solid var(--border); border-radius:12px; margin-bottom:10px; background:#fff;}
+  .report-item .top{display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;}
+  .report-item .num{font-weight:700; font-size:14px;}
+  .report-item .meta{font-size:12px; color:var(--muted); line-height:1.7;}
+  .tabbar{
+    position:fixed; bottom:0; right:0; left:0; background:#fff; border-top:1px solid var(--border);
+    display:flex; padding-bottom:env(safe-area-inset-bottom,0px); z-index:20;
+  }
+  .tabbar button{flex:1; background:none; border:none; padding:10px 4px 8px; font-size:11px; color:var(--muted); font-family:inherit; font-weight:600;}
+  .tabbar button.active{color:var(--teal);}
+  .tabbar .ic{font-size:20px; display:block; margin-bottom:2px;}
+  .screen{display:none;}
+  .screen.active{display:block;}
+  .empty{text-align:center; color:var(--muted); padding:30px 10px; font-size:14px;}
+  .toast{
+    position:fixed; bottom:80px; right:50%; transform:translateX(50%); background:#1f2937; color:#fff;
+    padding:10px 18px; border-radius:10px; font-size:13px; z-index:100; max-width:90%; text-align:center;
+    box-shadow:0 4px 14px rgba(0,0,0,.25);
+  }
+  .signed-in{display:flex; align-items:center; gap:8px; background:#f0fdfa; padding:10px 12px; border-radius:10px; margin-bottom:12px; font-size:13px; color:var(--teal-dark); font-weight:600;}
+  .hint{font-size:12px; color:var(--muted); margin-top:-8px; margin-bottom:14px; line-height:1.6;}
+  h2.title{font-size:15px; margin:0 0 12px;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>المندرية للمقاولات</h1>
+  <p>النظام الميداني — مشروع نقل الهدميات</p>
+</header>
+
+<main>
+
+  <!-- ===== شاشة بلاغ جديد ===== -->
+  <section id="screen-new" class="screen active">
+
+    <div class="card">
+      <h2 class="title">بيانات البلاغ</h2>
+      <label>رقم البلاغ</label>
+      <input type="text" id="f-num" placeholder="مثال: 1024">
+
+      <label>حالة الموقع</label>
+      <select id="f-status">
+        <option value="لم يبدأ العمل">لم يبدأ العمل</option>
+        <option value="قيد التنفيذ">قيد التنفيذ</option>
+        <option value="منتهي">منتهي</option>
+        <option value="متعثر / يحتاج متابعة">متعثر / يحتاج متابعة</option>
+      </select>
+
+      <label>الكمية التقديرية للمخلفات</label>
+      <div class="row">
+        <input type="number" id="f-qty" placeholder="الكمية" min="0" step="0.5">
+        <select id="f-unit">
+          <option value="م³">م³</option>
+          <option value="شاحنة">شاحنة</option>
+          <option value="طن">طن</option>
+        </select>
+      </div>
+
+      <label>ملاحظات (اختياري)</label>
+      <textarea id="f-notes" rows="2" placeholder="ملاحظات إضافية..."></textarea>
+    </div>
+
+    <div class="card">
+      <h2 class="title">موقع البلاغ</h2>
+      <button class="btn btn-outline" id="btn-locate">📍 تحديد الموقع الحالي</button>
+      <div class="loc-box pending" id="loc-display">لم يتم تحديد الموقع بعد</div>
+      <label>الحي</label>
+      <input type="text" id="f-neigh" placeholder="اسم الحي">
+      <label>الشارع</label>
+      <input type="text" id="f-street" placeholder="اسم الشارع" style="margin-bottom:0;">
+    </div>
+
+    <div class="card">
+      <h2 class="title">الصور (<span id="photo-count">0</span>)</h2>
+      <div class="photos-grid" id="photos-grid"></div>
+      <input type="file" id="file-input" accept="image/*" capture="environment" style="display:none">
+      <button class="btn btn-outline" id="btn-add-photo">📷 التقاط / إضافة صورة</button>
+      <div class="hint">يتم دمج التاريخ والوقت والموقع تلقائيًا على كل صورة عند إضافتها.</div>
+    </div>
+
+    <button class="btn btn-primary" id="btn-save" style="font-size:16px; padding:14px;">💾 حفظ ورفع البلاغ</button>
+  </section>
+
+  <!-- ===== شاشة البلاغات ===== -->
+  <section id="screen-list" class="screen">
+    <div class="card" style="margin-bottom:10px;">
+      <h2 class="title" style="margin-bottom:4px;">البلاغات المحفوظة</h2>
+      <div class="hint" style="margin-top:0;">اسحب للأسفل لا يحدّث تلقائيًا — البلاغات محفوظة على هذا الجهاز.</div>
+    </div>
+    <div id="reports-list"></div>
+  </section>
+
+  <!-- ===== شاشة الإعدادات ===== -->
+  <section id="screen-settings" class="screen">
+    <div class="card">
+      <h2 class="title">ربط Google Drive</h2>
+      <div id="auth-status-area"></div>
+      <label>Google OAuth Client ID</label>
+      <input type="text" id="f-clientid" placeholder="xxxxxxxx.apps.googleusercontent.com">
+      <button class="btn btn-outline" id="btn-save-clientid">حفظ الإعدادات</button>
+      <button class="btn btn-primary" id="btn-google-signin">🔐 تسجيل الدخول بجوجل</button>
+      <button class="btn btn-danger" id="btn-google-signout" style="display:none;">تسجيل الخروج</button>
+      <div class="hint">يستخدم التطبيق صلاحية محدودة (drive.file) تسمح له فقط بإنشاء ورفع الملفات التي ينشئها هو، دون الوصول لباقي ملفاتك.</div>
+    </div>
+    <div class="card">
+      <h2 class="title">اسم المجلد الرئيسي في Drive</h2>
+      <input type="text" id="f-rootfolder" placeholder="المندرية - النظام الميداني" style="margin-bottom:6px;">
+      <div class="hint" style="margin-top:0;">سيتم إنشاء هذا المجلد تلقائيًا، وداخله مجلد فرعي مستقل لكل بلاغ بحسب رقمه.</div>
+    </div>
+  </section>
+
+</main>
+
+<div class="tabbar">
+  <button class="tab-btn active" data-screen="new"><span class="ic">📝</span>بلاغ جديد</button>
+  <button class="tab-btn" data-screen="list"><span class="ic">📋</span>البلاغات</button>
+  <button class="tab-btn" data-screen="settings"><span class="ic">⚙️</span>الإعدادات</button>
+</div>
+
+<script>
+/* ============ الحالة العامة ============ */
+const state = {
+  photos: [],          // {blob, url}
+  location: null,      // {lat, lon, display}
+  accessToken: null,
+  tokenClient: null,
+};
+
+const $ = (id)=>document.getElementById(id);
+
+/* ============ التنقل بين الشاشات ============ */
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    btn.classList.add('active');
+    $('screen-'+btn.dataset.screen).classList.add('active');
+    if(btn.dataset.screen==='list') renderReportsList();
+  });
+});
+
+function toast(msg, ms=2600){
+  const t = document.createElement('div');
+  t.className='toast'; t.textContent=msg;
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(), ms);
+}
+
+/* ============ الإعدادات المحفوظة محليًا ============ */
+function getSettings(){
+  try{ return JSON.parse(localStorage.getItem('md_settings')||'{}'); }catch(e){ return {}; }
+}
+function saveSettings(s){ localStorage.setItem('md_settings', JSON.stringify(s)); }
+
+function loadSettingsToForm(){
+  const s = getSettings();
+  $('f-clientid').value = s.clientId || '';
+  $('f-rootfolder').value = s.rootFolder || 'المندرية - النظام الميداني';
+}
+loadSettingsToForm();
+
+$('btn-save-clientid').addEventListener('click', ()=>{
+  const s = getSettings();
+  s.clientId = $('f-clientid').value.trim();
+  s.rootFolder = $('f-rootfolder').value.trim() || 'المندرية - النظام الميداني';
+  saveSettings(s);
+  toast('تم حفظ الإعدادات');
+  initGoogleClient();
+});
+$('f-rootfolder').addEventListener('change', ()=>{
+  const s=getSettings(); s.rootFolder=$('f-rootfolder').value.trim(); saveSettings(s);
+});
+
+/* ============ تسجيل الدخول بجوجل ============ */
+function initGoogleClient(){
+  const s = getSettings();
+  if(!s.clientId || !window.google || !google.accounts) return;
+  state.tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: s.clientId,
+    scope: 'https://www.googleapis.com/auth/drive.file',
+    callback: (resp)=>{
+      if(resp && resp.access_token){
+        state.accessToken = resp.access_token;
+        localStorage.setItem('md_token_expiry', Date.now() + (resp.expires_in*1000 - 60000));
+        updateAuthUI(true);
+        toast('تم تسجيل الدخول بنجاح');
+        flushPendingUploads();
+      }
+    }
+  });
+}
+window.addEventListener('load', ()=>setTimeout(initGoogleClient, 500));
+
+$('btn-google-signin').addEventListener('click', ()=>{
+  const s = getSettings();
+  if(!s.clientId){ toast('أدخل واحفظ Client ID أولاً'); return; }
+  if(!state.tokenClient) initGoogleClient();
+  if(state.tokenClient) state.tokenClient.requestAccessToken();
+  else toast('تعذر تهيئة تسجيل الدخول، تأكد من الاتصال');
+});
+$('btn-google-signout').addEventListener('click', ()=>{
+  if(state.accessToken){ google.accounts.oauth2.revoke(state.accessToken, ()=>{}); }
+  state.accessToken = null;
+  updateAuthUI(false);
+  toast('تم تسجيل الخروج');
+});
+function updateAuthUI(signedIn){
+  $('auth-status-area').innerHTML = signedIn
+    ? '<div class="signed-in">✅ متصل بحساب جوجل</div>'
+    : '<div class="signed-in" style="background:#fef3c7;color:#92400e;">⚠️ غير متصل بعد</div>';
+  $('btn-google-signin').style.display = signedIn ? 'none':'block';
+  $('btn-google-signout').style.display = signedIn ? 'block':'none';
+}
+updateAuthUI(false);
+
+/* ============ تحديد الموقع + التحويل لاسم حي/شارع ============ */
+$('btn-locate').addEventListener('click', ()=>{
+  if(!navigator.geolocation){ toast('الجهاز لا يدعم تحديد الموقع'); return; }
+  $('loc-display').textContent = 'جارٍ تحديد الموقع...';
+  $('loc-display').className = 'loc-box pending';
+  navigator.geolocation.getCurrentPosition(async (pos)=>{
+    const lat = pos.coords.latitude, lon = pos.coords.longitude;
+    state.location = {lat, lon, display: `${lat.toFixed(5)}, ${lon.toFixed(5)}`};
+    $('loc-display').textContent = `📍 ${state.location.display} — جارٍ جلب اسم الحي...`;
+    try{
+      const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&accept-language=ar&zoom=18`);
+      const j = await r.json();
+      const a = j.address || {};
+      const street = a.road || a.pedestrian || '';
+      const neigh = a.suburb || a.neighbourhood || a.quarter || a.city_district || a.city || '';
+      if(!$('f-neigh').value) $('f-neigh').value = neigh;
+      if(!$('f-street').value) $('f-street').value = street;
+      state.location.display = [neigh, street].filter(Boolean).join(' - ') || state.location.display;
+      $('loc-display').innerHTML = `📍 ${state.location.display}<br><small>${lat.toFixed(5)}, ${lon.toFixed(5)}</small>`;
+      $('loc-display').className = 'loc-box ok';
+    }catch(e){
+      $('loc-display').innerHTML = `📍 ${lat.toFixed(5)}, ${lon.toFixed(5)} <br><small>تعذر جلب اسم الحي، أدخله يدويًا</small>`;
+      $('loc-display').className = 'loc-box ok';
+    }
+  }, (err)=>{
+    $('loc-display').textContent = 'تعذر تحديد الموقع، تأكد من تفعيل صلاحية الموقع';
+    $('loc-display').className = 'loc-box pending';
+    toast('تعذر تحديد الموقع');
+  }, {enableHighAccuracy:true, timeout:15000});
+});
+
+/* ============ الصور + دمج التاريخ/الوقت/الموقع ============ */
+$('btn-add-photo').addEventListener('click', ()=> $('file-input').click());
+
+$('file-input').addEventListener('change', async (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const stamped = await stampPhoto(file);
+  state.photos.push(stamped);
+  renderPhotos();
+  e.target.value = '';
+});
+
+function stampPhoto(file){
+  return new Promise((resolve)=>{
+    const img = new Image();
+    const reader = new FileReader();
+    reader.onload = (ev)=>{
+      img.onload = ()=>{
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width; canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img,0,0);
+
+        const now = new Date();
+        const dateStr = now.toLocaleDateString('ar-SA', {year:'numeric',month:'2-digit',day:'2-digit'});
+        const timeStr = now.toLocaleTimeString('ar-SA', {hour:'2-digit',minute:'2-digit'});
+        const locStr = state.location ? state.location.display : 'الموقع غير محدد';
+
+        const barH = Math.max(60, Math.round(img.height*0.09));
+        ctx.fillStyle = 'rgba(0,0,0,0.55)';
+        ctx.fillRect(0, img.height-barH, img.width, barH);
+
+        const fontSize = Math.max(16, Math.round(img.width*0.028));
+        ctx.fillStyle = '#ffffff';
+        ctx.font = `bold ${fontSize}px sans-serif`;
+        ctx.textBaseline = 'middle';
+        ctx.direction = 'rtl';
+        const pad = fontSize*0.6;
+        ctx.fillText(`${dateStr}   ${timeStr}`, img.width-pad, img.height-barH+fontSize*0.9, img.width-pad*2);
+        ctx.font = `${Math.round(fontSize*0.85)}px sans-serif`;
+        ctx.fillText(`📍 ${locStr}`, img.width-pad, img.height-barH+fontSize*2.1, img.width-pad*2);
+
+        canvas.toBlob((blob)=>{
+          resolve({blob, url:URL.createObjectURL(blob), name:`photo_${Date.now()}.jpg`});
+        }, 'image/jpeg', 0.85);
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function renderPhotos(){
+  $('photo-count').textContent = state.photos.length;
+  $('photos-grid').innerHTML = state.photos.map((p,i)=>`
+    <div class="photo-thumb">
+      <img src="${p.url}">
+      <button class="del" data-i="${i}">✕</button>
+    </div>`).join('');
+  document.querySelectorAll('.photo-thumb .del').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      state.photos.splice(+b.dataset.i,1);
+      renderPhotos();
+    });
+  });
+}
+
+/* ============ حفظ البلاغ ورفعه ============ */
+function readReportsFromStorage(){
+  try{ return JSON.parse(localStorage.getItem('md_reports')||'[]'); }catch(e){ return []; }
+}
+function writeReportsToStorage(list){ localStorage.setItem('md_reports', JSON.stringify(list)); }
+
+$('btn-save').addEventListener('click', async ()=>{
+  const num = $('f-num').value.trim();
+  if(!num){ toast('أدخل رقم البلاغ'); return; }
+  if(state.photos.length===0){ toast('أضف صورة واحدة على الأقل'); return; }
+
+  const report = {
+    id: 'r_'+Date.now(),
+    num, status: $('f-status').value,
+    qty: $('f-qty').value, unit: $('f-unit').value,
+    notes: $('f-notes').value,
+    neigh: $('f-neigh').value, street: $('f-street').value,
+    location: state.location,
+    createdAt: new Date().toISOString(),
+    photoCount: state.photos.length,
+    uploadStatus: 'pending',
+    driveLink: null,
+  };
+
+  // حفظ الصور مؤقتًا كـ base64 لضمان عدم فقدانها لو فشل الرفع
+  const photosB64 = await Promise.all(state.photos.map(p=>blobToBase64(p.blob)));
+  report._photos = photosB64;
+
+  const list = readReportsFromStorage();
+  list.unshift(report);
+  writeReportsToStorage(list);
+
+  toast('تم حفظ البلاغ، جارٍ محاولة الرفع...');
+  resetForm();
+  attemptUpload(report.id);
+});
+
+function blobToBase64(blob){
+  return new Promise((res)=>{
+    const r = new FileReader();
+    r.onload = ()=>res(r.result);
+    r.readAsDataURL(blob);
+  });
+}
+function base64ToBlob(dataUrl){
+  return fetch(dataUrl).then(r=>r.blob());
+}
+
+function resetForm(){
+  state.photos = []; state.location = null;
+  $('f-num').value=''; $('f-qty').value=''; $('f-notes').value='';
+  $('f-neigh').value=''; $('f-street').value='';
+  $('loc-display').textContent='لم يتم تحديد الموقع بعد';
+  $('loc-display').className='loc-box pending';
+  renderPhotos();
+}
+
+/* ============ الرفع إلى Google Drive ============ */
+async function ensureToken(){
+  if(state.accessToken) return state.accessToken;
+  return new Promise((resolve)=>{
+    if(!state.tokenClient) initGoogleClient();
+    if(!state.tokenClient){ resolve(null); return; }
+    const original = state.tokenClient.callback;
+    state.tokenClient.callback = (resp)=>{
+      original(resp);
+      resolve(resp && resp.access_token ? resp.access_token : null);
+    };
+    state.tokenClient.requestAccessToken();
+  });
+}
+
+async function driveApi(path, opts={}){
+  const token = state.accessToken;
+  const r = await fetch('https://www.googleapis.com/'+path, {
+    ...opts,
+    headers: {...(opts.headers||{}), 'Authorization':'Bearer '+token}
+  });
+  if(!r.ok){
+    let detail = 'HTTP '+r.status;
+    try{ const j = await r.json(); detail = (j.error && (j.error.message||j.error)) || detail; }catch(e){}
+    throw new Error(detail);
+  }
+  return r.json();
+}
+
+async function getOrCreateFolder(name, parentId){
+  const q = encodeURIComponent(`name='${name.replace(/'/g,"\\'")}' and mimeType='application/vnd.google-apps.folder' and trashed=false` + (parentId? ` and '${parentId}' in parents`:''));
+  const search = await driveApi(`drive/v3/files?q=${q}&fields=files(id,name)`);
+  if(search.files && search.files.length>0) return search.files[0].id;
+  const metadata = {name, mimeType:'application/vnd.google-apps.folder'};
+  if(parentId) metadata.parents=[parentId];
+  const created = await driveApi('drive/v3/files', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(metadata)
+  });
+  return created.id;
+}
+
+async function uploadFileToDrive(blob, filename, parentId, mime){
+  const metadata = {name:filename, parents:[parentId]};
+  const boundary = '-------md'+Date.now();
+  const arrBuf = await blob.arrayBuffer();
+  const bytes = new Uint8Array(arrBuf);
+  let binary=''; for(let i=0;i<bytes.byteLength;i++) binary+=String.fromCharCode(bytes[i]);
+  const base64Data = btoa(binary);
+
+  const body =
+    `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(metadata)}\r\n`+
+    `--${boundary}\r\nContent-Type: ${mime}\r\nContent-Transfer-Encoding: base64\r\n\r\n${base64Data}\r\n`+
+    `--${boundary}--`;
+
+  const r = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink', {
+    method:'POST',
+    headers:{'Authorization':'Bearer '+state.accessToken, 'Content-Type':`multipart/related; boundary=${boundary}`},
+    body
+  });
+  if(!r.ok){
+    let detail = 'HTTP '+r.status;
+    try{ const j = await r.json(); detail = (j.error && (j.error.message||j.error)) || detail; }catch(e){}
+    throw new Error(detail);
+  }
+  return r.json();
+}
+
+async function attemptUpload(reportId){
+  const list = readReportsFromStorage();
+  const idx = list.findIndex(r=>r.id===reportId);
+  if(idx===-1) return;
+  const report = list[idx];
+  if(report.uploadStatus==='done') return;
+
+  report.uploadStatus='uploading';
+  list[idx]=report; writeReportsToStorage(list);
+  renderReportsList();
+
+  try{
+    const token = await ensureToken();
+    if(!token) throw new Error('no_auth');
+    const s = getSettings();
+    const rootId = await getOrCreateFolder(s.rootFolder || 'المندرية - النظام الميداني', null);
+    const folderName = `بلاغ رقم ${report.num} - ${report.neigh||''} ${report.street||''}`.trim();
+    const folderId = await getOrCreateFolder(folderName, rootId);
+
+    // ملف بيانات البلاغ
+    const infoText =
+`رقم البلاغ: ${report.num}
+حالة الموقع: ${report.status}
+الكمية التقديرية: ${report.qty||'-'} ${report.unit||''}
+الحي: ${report.neigh||'-'}
+الشارع: ${report.street||'-'}
+الإحداثيات: ${report.location ? report.location.lat+','+report.location.lon : '-'}
+ملاحظات: ${report.notes||'-'}
+تاريخ الإنشاء: ${new Date(report.createdAt).toLocaleString('ar-SA')}`;
+    const infoBlob = new Blob([infoText], {type:'text/plain'});
+    await uploadFileToDrive(infoBlob, 'بيانات_البلاغ.txt', folderId, 'text/plain');
+
+    for(let i=0;i<report._photos.length;i++){
+      const blob = await base64ToBlob(report._photos[i]);
+      await uploadFileToDrive(blob, `صورة_${i+1}.jpg`, folderId, 'image/jpeg');
+    }
+
+    report.uploadStatus='done';
+    report.driveLink = `https://drive.google.com/drive/folders/${folderId}`;
+    delete report._photos;
+    list[idx]=report; writeReportsToStorage(list);
+    toast(`تم رفع البلاغ رقم ${report.num} بنجاح`);
+  }catch(e){
+    report.uploadStatus='error';
+    report.uploadError = (e && e.message) ? String(e.message) : 'خطأ غير معروف';
+    list[idx]=report; writeReportsToStorage(list);
+    toast('فشل الرفع: '+report.uploadError, 5000);
+  }
+  renderReportsList();
+}
+
+function flushPendingUploads(){
+  const list = readReportsFromStorage();
+  list.filter(r=>r.uploadStatus!=='done').forEach(r=>attemptUpload(r.id));
+}
+
+/* ============ عرض قائمة البلاغات ============ */
+function renderReportsList(){
+  const list = readReportsFromStorage();
+  if(list.length===0){
+    $('reports-list').innerHTML = '<div class="empty">لا توجد بلاغات محفوظة بعد</div>';
+    return;
+  }
+  const badgeMap = {pending:['badge-pending','بانتظار الرفع'], uploading:['badge-uploading','جارٍ الرفع...'], done:['badge-done','تم الرفع ✓'], error:['badge-error','فشل الرفع']};
+  $('reports-list').innerHTML = list.map(r=>{
+    const [cls,label] = badgeMap[r.uploadStatus]||badgeMap.pending;
+    return `
+    <div class="report-item">
+      <div class="top">
+        <span class="num">بلاغ #${r.num}</span>
+        <span class="badge ${cls}">${label}</span>
+      </div>
+      <div class="meta">
+        ${r.neigh||''} ${r.street?('- '+r.street):''}<br>
+        الحالة: ${r.status} | الكمية: ${r.qty||'-'} ${r.unit||''} | الصور: ${r.photoCount}<br>
+        ${new Date(r.createdAt).toLocaleString('ar-SA')}
+      </div>
+      ${r.driveLink? `<a href="${r.driveLink}" target="_blank" style="font-size:12px;color:#0f766e;font-weight:700;">📁 فتح مجلد Drive</a>`:''}
+      ${r.uploadStatus==='error'? `<div style="font-size:12px;color:#991b1b;margin-top:4px;">السبب: ${r.uploadError||'غير معروف'}</div>`:''}
+      ${r.uploadStatus==='error'? `<button class="btn btn-outline" style="margin-top:8px;padding:8px;font-size:12px;" onclick="attemptUpload('${r.id}')">إعادة محاولة الرفع</button>`:''}
+    </div>`;
+  }).join('');
+}
+
+/* تسجيل service worker للعمل كتطبيق مثبّت */
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  });
+}
+
+flushPendingUploads();
+</script>
+</body>
+</html>
